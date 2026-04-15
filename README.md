@@ -7,7 +7,8 @@ Landing + ticketera con Mercado Pago + panel admin.
 
 ## Estado
 
-En desarrollo inicial. Arquitectura definida, scaffold pendiente.
+Scaffold Next.js 14 listo. Gate de password universal + landing placeholder funcionales.
+Próximo: deploy a Vercel + dominio. Luego integración Supabase, admin, tickets, etc.
 
 ---
 
@@ -18,6 +19,8 @@ En desarrollo inicial. Arquitectura definida, scaffold pendiente.
 - **[docs/API.md](docs/API.md)** — especificación de endpoints (públicos + admin + cron)
 - **[docs/SCAFFOLD.md](docs/SCAFFOLD.md)** — plan de la base del proyecto: estructura, deps, configs, checklist
 - **[docs/EXTERNAL_SERVICES.md](docs/EXTERNAL_SERVICES.md)** — servicios de terceros (Supabase, MP, Resend, Vercel, 1Password, etc.), setup, costos, manejo de secrets
+- **[docs/DEPLOY.md](docs/DEPLOY.md)** — deploy a Vercel, configuración de dominio y DNS, rotación de secrets, troubleshooting
+- **[docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)** — action items humanos post-deploy (crear cuentas, comprar dominio, etc.)
 - **[docs/database.excalidraw](docs/database.excalidraw)** — diagrama de base de datos (abrir con [excalidraw.com](https://excalidraw.com))
 
 ---
@@ -47,10 +50,26 @@ Cada colaborador trabaja en su propia `feature/*` desde `develop`.
 
 ## Setup local
 
-> Pendiente hasta scaffold inicial.
+```bash
+cp .env.example .env.local
+# Editar .env.local:
+#   GATE_PASSWORD=lo-que-quieras
+#   GATE_COOKIE_SECRET=$(openssl rand -base64 32)
+npm install
+npm run dev
+```
+
+Abrir `http://localhost:3000` → redirige a `/access` → ingresar el password → ve la landing.
+
+### Scripts
 
 ```bash
-# TODO: npm install, variables de entorno, supabase local, etc.
+npm run dev        # dev server (puerto 3000)
+npm run build      # build de producción
+npm run start      # server de producción
+npm run lint       # ESLint
+npm run typecheck  # tsc --noEmit
+npm run format     # prettier --write
 ```
 
 ---

@@ -241,7 +241,12 @@ Default: **no escribir comentarios**. Los buenos nombres explican qué hace el c
 
 - [.claude/commands/handoff.md](./commands/handoff.md) — `/handoff` genera HANDOFF.md + entrada en JOURNAL.md + DECISIONS.md pre-PR
 - [.claude/commands/](./commands/) — slash commands custom del proyecto
-- [.claude/skills/](./skills/) — skills compartidos del equipo (vacío por ahora)
+- [.claude/skills/](./skills/) — skills compartidos del equipo. Ver [skills/README.md](./skills/README.md):
+  - `frontend-design` — UI distintiva, anti AI-slop (antes de codear UI)
+  - `shannon` — pentester autónomo (pre-PR en cambios sensibles: gate, webhook MP, RLS)
+  - `code-reviewer` — review del diff (pre-push)
+  - `browser-use` — testing e2e y screenshots
+  - `claude-md-improver` — auditar y mejorar este archivo (pre-handoff)
 
 A medida que vayamos creando flujos útiles, los guardamos acá para que todos los usemos igual.
 
@@ -254,7 +259,11 @@ A medida que vayamos creando flujos útiles, los guardamos acá para que todos l
 - ✅ Diagrama de DB
 - ✅ Plan de scaffold
 - ✅ Servicios externos documentados
-- ⏳ Scaffold (próximo paso)
-- ⏳ Implementación feature por feature
+- ✅ Scaffold Next.js 14 (App Router + TS + Tailwind)
+- ✅ Gate de password universal (middleware + iron-session, 1 día)
+- ✅ Landing placeholder
+- ⏳ Deploy a Vercel + compra de dominio → ver `docs/DEPLOY.md` y `docs/NEXT_STEPS.md`
+- ⏳ Integración Supabase (siguiente feature)
+- ⏳ Whitelist + admin + tickets + MP + scanner
 
-Branch actual de trabajo: `feature/project-base`.
+Branch actual de trabajo: `feature/landing-gate`.

@@ -7,7 +7,7 @@
 > - Si una decisión cambia → nueva entrada que la supersede (con link a la anterior)
 > - Formato: contexto → decisión → alternativas descartadas → consecuencias
 >
-> Última entrada: #007
+> Última entrada: #010
 
 ---
 
@@ -159,4 +159,70 @@
 
 ---
 
-<!-- Las próximas decisiones se agregan como #008, #009, etc. -->
+## #008 — `GATE_PASSWORD` en env var (temporal)
+
+**Fecha:** 2026-04-15
+**Autor:** José + Claude
+
+**Contexto:** Feature `landing-gate` es el primer código ejecutable. No hay Supabase aún. ¿Dónde vive el password del gate?
+
+**Decisión:** En una env var `GATE_PASSWORD` en v0. Rotable desde Vercel dashboard. Cuando entre Supabase (feature siguiente), migra a la tabla `site_config` con rotación desde `/admin/config` (ya contemplado en `docs/ARCHITECTURE.md`).
+
+**Alternativas descartadas:**
+- Pasar directo a `site_config`: requiere Supabase antes de deployar → retrasa el objetivo de tener algo en Vercel para comprar dominio.
+- Hardcode en código: inaceptable por seguridad + requiere redeploy para rotar.
+
+**Consecuencias:**
+- Rotación manual vía Vercel env vars + redeploy. Aceptable para v0.
+- Cuando migre a DB, actualizar el route handler `/api/gate` para leer de `site_config` con caché corto.
+
+---
+
+## #009 — Rate limit del gate con delay artificial
+
+**Fecha:** 2026-04-15
+**Autor:** José + Claude
+
+**Contexto:** Evitar brute force del password universal. ¿Cómo sin agregar infra extra?
+
+**Decisión:** Delay artificial de 500ms en todas las respuestas de fallo del endpoint `/api/gate`. Sin Redis, sin Upstash, sin contador. El delay por sí solo hace el brute force inviable: con 500ms por intento, probar 10k combinaciones toma >1h por cliente.
+
+**Alternativas descartadas:**
+- Upstash Redis (ya planeado en `docs/EXTERNAL_SERVICES.md`): overhead de setup y costo para v0. Se integra cuando haya endpoints más críticos (webhook MP, whitelist check, checkout).
+- Contador en memoria por IP: Next.js en Vercel es serverless, la memoria no persiste entre invocations.
+- Bloqueo temporal por IP: requiere storage externo → mismo problema.
+
+**Consecuencias:**
+- Ante ataque distribuido (botnet con muchas IPs) el delay solo lo ralentiza, no lo bloquea. Aceptable porque el password NO es la barrera real de acceso (lo es la whitelist de emails).
+- En feature `feature/supabase-setup` o posterior se integra Upstash para rate limit por IP en endpoints sensibles.
+
+---
+
+## #010 — Skills compartidas copiadas al repo
+
+**Fecha:** 2026-04-15
+**Autor:** José
+
+**Contexto:** Tato y Facu tienen Claude Code pero no tienen las skills que José usa. ¿Cómo compartirlas sin que cada uno las configure localmente?
+
+**Decisión:** Copiar 5 skills relevantes al proyecto a `.claude/skills/` del repo (mismo patrón que comandos). Se commitean y cualquier miembro al clonar el repo las tiene.
+
+Skills elegidas:
+- `frontend-design` — UI distintiva (crítico para landing + admin)
+- `shannon` — pentester autónomo (crítico pre-PR en gate, webhook MP, RLS)
+- `code-reviewer` — review automático del diff
+- `browser-use` — testing e2e + screenshots
+- `claude-md-improver` — mantener el CLAUDE.md al día
+
+**Alternativas descartadas:**
+- Cada dev instala sus skills localmente: inconsistencia entre miembros, no garantiza que todos usen las mismas.
+- Incluir `valyu-best-practices`: no aplica al stack HOUSE MATES (no hay uso de Valyu API).
+
+**Consecuencias:**
+- El `.claude/` del repo pesa más, pero sigue siendo razonable.
+- Actualizar una skill requiere PR al repo (consistencia garantizada).
+- Tato y Facu al clonar tienen el mismo toolkit que José.
+
+---
+
+<!-- Las próximas decisiones se agregan como #011, #012, etc. -->

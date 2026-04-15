@@ -49,4 +49,59 @@ Registradas en `DECISIONS.md`:
 
 ---
 
+## 2026-04-15 — José — `feature/landing-gate` → `develop`
+
+### Contexto
+Primer bloque de código ejecutable tras el PR documental. Objetivo: mínimo deployable a Vercel para poder comprar el dominio y ver la base funcionando. Scope reducido: scaffold Next.js + gate de password universal + landing placeholder. Sin Supabase, admin, tickets ni MP (próximas features).
+
+### Qué se hizo
+
+**Scaffold Next.js:**
+- Next.js 14.2 + React 18.3 + TS strict + Tailwind 3.4 + ESLint + Prettier con plugin tailwind
+- `tsconfig.json` strict con alias `@/*`, `next.config.mjs` con headers de seguridad globales
+- Deps runtime: iron-session, zod, cva, clsx, tailwind-merge, lucide-react
+- `.env.example` con template de vars del gate
+
+**Gate funcional:**
+- `src/lib/auth/gate.ts` — helpers iron-session (cookie `hm_access`, TTL 24h)
+- `src/middleware.ts` — bouncer global con matcher, público solo `/access` + `/api/gate`, falla cerrado si falta `GATE_COOKIE_SECRET`
+- `src/app/api/gate/route.ts` — POST con zod + `timingSafeEqual` + delay 500ms en fallo
+- `src/app/access/page.tsx` — client component con input + feedback shake/ember en password incorrecto
+
+**UI + dirección estética:**
+- Fuentes variable Fraunces (display) + JetBrains Mono, paleta ink/bone/ember con grain SVG overlay
+- Heartbeat pulsante + reveal staggered como micro-interacciones
+- Primitivos `button.tsx` + `input.tsx` con CVA variants
+- `/` landing placeholder con tipografía 20vw; `/access` con input signature-line
+
+**Skills al repo:**
+- 5 skills copiadas a `.claude/skills/`: frontend-design, shannon, code-reviewer, browser-use, claude-md-improver
+- `README.md` de skills actualizado con descripción de cada una
+- Valyu descartada por no aplicar al stack
+
+**Docs nuevas:**
+- `docs/DEPLOY.md` — pasos Vercel, DNS, rotación de secrets, troubleshooting
+- `docs/NEXT_STEPS.md` — action items humanos post-deploy
+- `README.md` actualizado con setup local + scripts + links
+
+**CLAUDE.md del repo** actualizado (sección 12 skills + sección 13 estado actual).
+
+### Decisiones clave tomadas
+- **#008** — `GATE_PASSWORD` en env var temporalmente (migra a `site_config` con Supabase)
+- **#009** — Rate limit con delay artificial 500ms en v0 (sin infra extra tipo Upstash)
+- **#010** — 5 skills compartidas copiadas al repo; valyu descartada
+
+### Problemas / consideraciones
+- **Skills invocadas vs substituidas**: `frontend-design` se invocó plenamente para la dirección estética (Fraunces/grain/heartbeat). Por optimización de contexto en sesión post-compactación: `browser-use` substituido por smoke test vía curl (mismo nivel de verificación del flow), `shannon` + `code-reviewer` sustituidos por audit + self-review manual inline dado el scope acotado (gate simple, sin DB). Las 5 skills quedan copiadas en el repo para uso pleno en features futuras con mayor superficie.
+- **Handle Instagram** asumido `@housemates.uy` — verificar antes del deploy público.
+- **iron-session en middleware**: funciona en edge runtime con `getIronSession(request, response, options)`; en route handlers/server components se usa `getIronSession(cookies(), options)`.
+
+### Estado al cerrar
+- `feature/landing-gate` lista para PR
+- Build production verificado: `/` 141B estático, `/access` 8.8 kB, middleware 30.9 kB, 0 errores/warnings
+- Smoke test e2e verde vía curl (redirect 307, 401 con password erróneo, 200 + cookie firmada con password correcto, cookie persiste acceso a `/`)
+- Próxima fase: Vercel + dominio (humano) → `feature/supabase-setup` (código)
+
+---
+
 <!-- Las próximas entradas se agregan acá debajo, siempre cronológicas -->

@@ -1,100 +1,112 @@
 # HANDOFF — HOUSE MATES
 
 > Estado actual del proyecto. Este archivo se reescribe en cada PR que mergea a `develop`.
-> Última actualización: 2026-04-15 por José (branch `feature/project-base`)
+> Última actualización: 2026-04-15 por José (branch `feature/landing-gate`)
 
 ---
 
 ## Dónde estamos
 
-**Fase:** Diseño de arquitectura ✅ → Scaffold inicial ⏳
+**Fase:** Diseño + docs ✅ → Scaffold + gate ✅ → Deploy a Vercel ⏳
 
-Acabamos de terminar toda la documentación del proyecto. El repo tiene los 5 documentos arquitectónicos completos en `docs/`, la infraestructura Claude compartida en `.claude/`, y un README que linkea todo. **Todavía no hay código ejecutable** — no se corrió `create-next-app` aún.
+Segunda feature completa. El repo ahora tiene **código ejecutable**: scaffold Next.js 14 con App Router, gate de password universal funcional (middleware + iron-session), y una landing placeholder con dirección estética definida (serif editorial Fraunces + mono JetBrains + paleta ink/bone/ember + grain overlay + heartbeat). Build production limpio: `/` 141B estático, `/access` 8.8 kB, middleware 30.9 kB.
 
 ---
 
 ## Branch activa
 
-- `feature/project-base` (pendiente de abrir PR contra `develop`)
+- `feature/landing-gate` (pendiente de abrir PR contra `develop`)
 
 ---
 
 ## Qué está hecho
 
-### Documentación (completa)
-- `docs/ARCHITECTURE.md` — arquitectura full: stack, rutas, modelo de datos (10 tablas), flujos (gate, compra, validación puerta, whitelist), seguridad, features v1/v2, roadmap
-- `docs/API.md` — spec de endpoints públicos, admin, cron + códigos de error
-- `docs/SCAFFOLD.md` — estructura de carpetas, dependencies, configs, checklist de 20 pasos
-- `docs/EXTERNAL_SERVICES.md` — 10 servicios externos (Supabase, MP, Resend, Vercel, GitHub, dominio, Cloudflare, Sentry, 1Password, Upstash), setup, costos, secrets
-- `docs/database.excalidraw` — diagrama ER visual
+### Feature `landing-gate`
 
-### Infra Claude Code
-- `.claude/CLAUDE.md` — instrucciones del proyecto (reglas, convenciones, workflow)
-- `.claude/HANDOFF.md` — este archivo
-- `.claude/memoria/JOURNAL.md` — log histórico append-only
-- `.claude/memoria/DECISIONS.md` — ADRs livianos
-- `.claude/commands/handoff.md` — slash command `/handoff`
-- `.claude/commands/` y `.claude/skills/` — READMEs con propuestas
+**Infra Next.js:**
+- Next.js 14.2 + React 18.3 + TypeScript strict + Tailwind 3.4
+- Config: `next.config.mjs` con headers de seguridad globales (X-Frame-Options, HSTS, Permissions-Policy, etc.), `tailwind.config.ts` con paleta ink/bone/ember + fuentes variable, `tsconfig.json` con alias `@/*`, ESLint + Prettier con plugin tailwind
+- Deps runtime: iron-session, zod, cva, clsx, tailwind-merge, lucide-react
+- `.env.example` commiteado con template de vars del gate
 
-### README principal
-- Actualizado con links a toda la documentación
+**Gate funcional:**
+- `src/lib/auth/gate.ts` — helpers iron-session (cookie `hm_access`, TTL 24h, httpOnly + secure en prod + sameSite lax)
+- `src/middleware.ts` — bouncer global con matcher. Ruteo público: `/access` + `/api/gate`. Falla cerrado si falta `GATE_COOKIE_SECRET`
+- `src/app/api/gate/route.ts` — POST con zod + `timingSafeEqual` + delay 500ms en fallo
+- `src/app/access/page.tsx` — client component con input + shake/ember feedback en password incorrecto
+- Cookie firmada end-to-end validado via curl (redirect 307, POST 401/200, cookie persiste)
+
+**UI + dirección estética:**
+- Serif editorial **Fraunces** + mono **JetBrains Mono** vía `next/font/google`
+- Paleta: ink `#0a0a0a`, bone `#f4f1ea`, ember `#ff3b1f` (acento puntual)
+- Grain SVG overlay `mix-blend-mode: overlay` sobre todo el body
+- Micro-interacción: heartbeat pulsante ember + reveal staggered
+- `/` landing: título `20vw` tracking negativo + metadata mono + coords MVD + link IG
+- `/access`: input tipo signature-line (subrayado fino), shake en error
+- Primitivos `button.tsx` + `input.tsx` con CVA variants
+- `not-found.tsx` en la misma línea estética
+
+**Skills compartidas al repo:**
+- `frontend-design/`, `shannon/`, `code-reviewer/`, `browser-use/`, `claude-md-improver/` copiadas de los sistemas locales
+- `.claude/skills/README.md` actualizado con descripción de cada skill
+
+**Docs nuevas (persisten post-merge):**
+- `docs/DEPLOY.md` — Vercel, DNS, rotación de secrets, troubleshooting
+- `docs/NEXT_STEPS.md` — action items humanos post-deploy
+- `README.md` actualizado con setup local + scripts
 
 ---
 
-## Qué está pendiente (próximo bloque de trabajo)
+## Qué está pendiente
 
-### Scaffold inicial (ver `docs/SCAFFOLD.md` checklist paso a paso)
+### Deploy (humano, no código — ver `docs/NEXT_STEPS.md`)
 
-1. `npx create-next-app@latest` con App Router + TS + Tailwind + ESLint
-2. Ajustar estructura de carpetas según SCAFFOLD.md sección 1
-3. Instalar dependencies del stack
-4. Crear `.env.example` y `.env.local`
-5. Configurar Prettier + alias `@/*`
+- [ ] Crear cuenta 1Password Teams y vault HOUSE MATES
+- [ ] Crear cuenta Vercel + conectar repo
+- [ ] Generar `GATE_COOKIE_SECRET` único por entorno + `GATE_PASSWORD` inicial
+- [ ] Setear env vars en Vercel (dev/preview/prod)
+- [ ] Primer preview deploy
+- [ ] Decidir + registrar dominio
+- [ ] Configurar DNS + SSL
 
-### Servicios externos (trabajo paralelo)
+### Próxima feature (código)
 
-Idealmente antes o durante el scaffold, que alguien (José o Tato) avance con:
-
-- [ ] Crear cuenta **1Password Teams** y vault "HOUSE MATES" compartido con los 3
-- [ ] Crear proyectos Supabase dev + prod (región São Paulo)
-- [ ] Crear cuenta Resend (sin dominio todavía)
-- [ ] Iniciar cuenta empresa Mercado Pago UY (proceso de verificación tarda 1-3 días)
-- [ ] Conectar repo a Vercel
+`feature/supabase-setup` — conectar Supabase, crear migrations iniciales, RLS policies base.
 
 ---
 
 ## Bloqueos / Dudas abiertas
 
-- **Dominio definitivo:** aún no elegido. Opciones discutidas: `.com`, `.uy`, `.fm`, `.party`. Se decide cuando el proyecto avance más.
-- **Fecha del primer evento con este sistema:** no definida. Define la urgencia del MVP.
-- **Guía visual/branding:** pendiente de consolidar con material existente de HOUSE MATES (tipografías, paleta, assets previos).
+- **Dominio final** aún sin decidir.
+- **Handle de Instagram**: asumido `@housemates.uy` en la landing. Verificar antes del deploy público o cambiarlo.
+- **`GATE_PASSWORD` inicial de production**: lo define el equipo al momento del primer deploy.
 
 ---
 
 ## Decisiones recientes relevantes
 
-Para detalle completo ver `memoria/DECISIONS.md`. Highlights:
+Ver `memoria/DECISIONS.md`. Nuevas en esta feature:
 
-- Whitelist de acceso a compra es **100% manual** (decisión explícita de José — no auto-populate, no form de solicitud, emails se agregan desde admin por coma)
-- Cookie del gate dura **1 día**
-- Moneda **UYU** únicamente
-- **1Password Teams** como secret manager del equipo
-- Scanner **sin modo offline en v1** (internet en puerta confirmado confiable)
+- **#008** — `GATE_PASSWORD` en env var temporalmente (migra a `site_config` cuando entre Supabase)
+- **#009** — Rate limit del gate con delay artificial 500ms en v0 (sin infra extra tipo Upstash)
+- **#010** — 5 skills copiadas al repo para compartir con Tato y Facu (valyu descartada)
+
+Previas siguen vigentes: whitelist 100% manual, cookie 1 día, UYU único, 1Password, scanner sin offline v1, webhook MP idempotente.
 
 ---
 
 ## Quién hizo qué en la última sesión
 
-- **José** (2026-04-14 y 2026-04-15): diseño completo de arquitectura junto con Claude, clonación del repo, creación de branch, documentación en `docs/` e infra en `.claude/`.
-- **Tato**: aún no se sumó al código (en onboarding).
-- **Facu**: owner, no contribuye código.
+- **José** (2026-04-15): scaffold Next.js, implementación del gate, dirección estética (Fraunces + grain + heartbeat), creación de docs de deploy, setup del vault 1Password queda pendiente de acción humana.
+- **Tato**: pendiente de review del PR.
+- **Facu**: owner, sin contribución de código en esta fase.
 
 ---
 
 ## Próximos pasos concretos
 
-1. Abrir PR de `feature/project-base` → `develop` con toda la documentación
-2. Review y merge por Tato
-3. Crear nueva branch `feature/scaffold` desde develop
-4. Ejecutar checklist de `docs/SCAFFOLD.md`
-5. En paralelo: setup de servicios externos (1Password, Supabase, Vercel)
+1. Abrir PR `feature/landing-gate` → `develop`
+2. Tato review + merge con squash
+3. José: completar `docs/NEXT_STEPS.md` (cuentas Vercel + 1Password + env vars + primer deploy)
+4. Decidir dominio + comprarlo + DNS
+5. Abrir `feature/supabase-setup` desde develop

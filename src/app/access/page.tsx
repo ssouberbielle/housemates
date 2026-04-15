@@ -53,7 +53,7 @@ export default function AccessPage() {
             className="reveal mt-6 text-center font-display text-5xl font-light leading-none tracking-tightest md:text-6xl"
             style={{ animationDelay: '0.1s' }}
           >
-            house mates
+            HOUSE MATES
           </h1>
 
           <form
@@ -94,12 +94,12 @@ export default function AccessPage() {
       <footer className="flex items-end justify-between font-mono text-[10px] uppercase tracking-[0.35em] text-bone/40">
         <span>Solo miembros</span>
         <a
-          href="https://instagram.com/housemates.uy"
+          href="https://instagram.com/house__mates"
           target="_blank"
           rel="noreferrer"
           className="transition-colors hover:text-ember"
         >
-          → @housemates.uy
+          → @house__mates
         </a>
       </footer>
     </main>

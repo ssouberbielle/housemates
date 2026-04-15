@@ -105,3 +105,24 @@ Primer bloque de código ejecutable tras el PR documental. Objetivo: mínimo dep
 ---
 
 <!-- Las próximas entradas se agregan acá debajo, siempre cronológicas -->
+
+## 2026-04-15 — Tato — `feature/fix-landing` → `develop`
+
+### Contexto
+El HANDOFF anterior tenía abierta la duda sobre el handle de Instagram y el título de la
+landing estaba en minúsculas. Esta feature cierra ambos puntos antes del primer deploy.
+
+### Qué se hizo
+- `src/app/page.tsx`: título `HOUSE` / `MATES` pasó a mayúsculas; link IG corregido a `@house__mates`
+- `src/app/access/page.tsx`: título `HOUSE MATES` en mayúsculas; link IG corregido a `@house__mates`
+
+### Decisiones clave tomadas
+Ninguna decisión nueva registrada. El handle `@house__mates` era el correcto — se confirma y cierra la duda abierta.
+
+### Problemas / consideraciones
+- El browser (Brave) tenía caché agresiva que requirió borrar `.next/` + hard refresh para ver los cambios.
+
+### Estado al cerrar
+Landing visualmente correcta, lista para el primer deploy a Vercel. Próxima fase: `feature/supabase-setup`.
+
+---

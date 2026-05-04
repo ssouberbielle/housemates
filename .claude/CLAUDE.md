@@ -38,8 +38,9 @@ En orden:
 1. **[docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)** — visión general, rutas, modelo de datos, flujos
 2. **[docs/API.md](../docs/API.md)** — endpoints y contratos
 3. **[docs/EXTERNAL_SERVICES.md](../docs/EXTERNAL_SERVICES.md)** — servicios externos y secrets
-4. **[docs/SCAFFOLD.md](../docs/SCAFFOLD.md)** — estructura del proyecto y orden de implementación
-5. **[docs/database.excalidraw](../docs/database.excalidraw)** — diagrama de DB (abrir con excalidraw.com)
+4. **[docs/CREDENTIALS.md](../docs/CREDENTIALS.md)** — manejo seguro de credenciales y variables de entorno
+5. **[docs/SCAFFOLD.md](../docs/SCAFFOLD.md)** — estructura del proyecto y orden de implementación
+6. **[docs/database.excalidraw](../docs/database.excalidraw)** — diagrama de DB (abrir con excalidraw.com)
 
 **Regla:** antes de proponer una implementación, verificá que coincida con la arquitectura documentada. Si hay un conflicto, pausá y preguntá — no improvises.
 

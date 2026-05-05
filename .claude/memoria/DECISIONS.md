@@ -226,3 +226,46 @@ Skills elegidas:
 ---
 
 <!-- Las próximas decisiones se agregan como #011, #012, etc. -->
+
+## #011 — Actualización de `@supabase/ssr` a 0.10.2
+
+**Fecha:** 2026-05-04
+**Autor:** Tato + Claude
+
+**Contexto:** El código de los clientes Supabase (`server.ts`, middleware) fue escrito con la API `getAll/setAll` de `@supabase/ssr`. La versión instalada era 0.3.0, que usa la API vieja (`get/set/remove`). La librería ignoraba silenciosamente los callbacks de cookies — resultado: ninguna sesión se persistía después del login, el usuario nunca podía acceder al panel.
+
+**Decisión:** Actualizar `@supabase/ssr` de `^0.3.0` a `0.10.2` (latest). El código ya estaba escrito con la API nueva — solo faltaba el paquete correcto.
+
+**Alternativas descartadas:**
+- Reescribir el código con la API vieja (`get/set/remove`): hubiera funcionado pero es la API deprecada. Mantener el código moderno y actualizar la dependencia es la decisión correcta.
+
+**Consecuencias:**
+- Sesiones de auth funcionan correctamente.
+- Para futuras dependencias de Supabase: verificar siempre la versión instalada vs la API que se usa. La diferencia entre minor versions puede ser breaking.
+
+---
+
+## #012 — Creación de admins desde el dashboard de Supabase (v1)
+
+**Fecha:** 2026-05-04
+**Autor:** Tato
+
+**Contexto:** El sistema necesita admins (owners + staff validadores). ¿Cómo se crean los usuarios? ¿Hay UI de registro en el panel, signup por email, o gestión manual?
+
+**Decisión:** En v1, los admins se crean **manualmente desde el dashboard de Supabase**:
+1. Crear usuario en Authentication → Users (Supabase maneja la password con bcrypt)
+2. Insertar registro en la tabla `admins` con el UUID generado
+
+No hay UI de self-registro ni de invitación. El set de admins es pequeño y fijo (owners + pocos staff). Ver instrucciones detalladas en `docs/EXTERNAL_SERVICES.md` §1.
+
+Para **cambiar passwords**: desde el dashboard de Supabase o mediante `supabase.auth.updateUser()` desde el panel cuando `/admin/config` esté implementado.
+
+**Alternativas descartadas:**
+- UI de creación de admins en el panel: overhead innecesario para v1 con 2-3 admins totales
+- Invitación por email con link de signup: más complejo, requiere flujo de onboarding extra
+- Custom auth (passwords en DB propios): Supabase Auth ya resuelve esto de forma segura (bcrypt, JWT, reset por email)
+
+**Consecuencias:**
+- Cualquier miembro del equipo con acceso al dashboard de Supabase puede crear admins. Controlar quién tiene acceso al proyecto de Supabase.
+- En v2, si el número de staff crece, considerar una UI de invitación desde el panel (`/admin/team`).
+- El campo `active` en la tabla `admins` permite desactivar un admin sin borrarlo de Supabase Auth.

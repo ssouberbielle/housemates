@@ -106,6 +106,44 @@ Primer bloque de código ejecutable tras el PR documental. Objetivo: mínimo dep
 
 <!-- Las próximas entradas se agregan acá debajo, siempre cronológicas -->
 
+## 2026-04-15 — Tato — `feature/supabase-setup` → `develop`
+
+### Contexto
+Conectar Supabase al proyecto: schema de DB completo, migrations, clientes SSR/browser/admin, tipos TypeScript, validaciones. Sin lógica de negocio aún — solo la plomería de datos.
+
+### Qué se hizo
+
+**Schema y migrations:**
+- `supabase/migrations/0001_init.sql` — 10 tablas (admins, events, ticket_tiers, tickets, whitelist, check_ins, admin_logs, site_config, gate_attempts, email_log), tipos enum, trigger `updated_at` automático en events
+- `supabase/migrations/0002_indexes.sql` — índices de performance en columnas frecuentes
+- `supabase/migrations/0003_rls.sql` — Row Level Security en todas las tablas; acceso público solo a eventos/tiers published; escritura solo con service_role
+- `supabase/migrations/0004_seed.sql` — datos de seed para desarrollo
+
+**Clientes Supabase:**
+- `src/lib/supabase/server.ts` — cliente SSR con `cookies()` de `next/headers` (getAll/setAll), para Server Components, Route Handlers y Server Actions
+- `src/lib/supabase/client.ts` — cliente browser con `createBrowserClient`
+- `src/lib/supabase/admin.ts` — cliente con `service_role` key, bypass RLS, solo server-side
+- `src/types/database.ts` — tipos TypeScript del schema
+
+**Validaciones:**
+- `src/lib/validation/email.ts` — normalización (lowercase, strip gmail dots/+tag)
+- `src/lib/validation/document.ts` — validación de CI uruguaya
+- `src/lib/validation/schemas.ts` — schemas Zod compartidos
+
+**Config:**
+- `supabase/config.toml` — configuración del CLI de Supabase para dev local
+
+### Decisiones clave tomadas
+Ninguna nueva. El schema implementa exactamente lo documentado en `docs/ARCHITECTURE.md` y `docs/database.excalidraw`.
+
+### Problemas / consideraciones
+- Los clientes de Supabase fueron escritos con la API `getAll/setAll` de `@supabase/ssr`. Esto resultó ser incompatible con la versión instalada (0.3.0) que usa `get/set/remove`. El bug se descubrió y resolvió en la feature siguiente (`admin-base`) al actualizar a 0.10.2.
+
+### Estado al cerrar
+- Migrations aplicadas en el proyecto Supabase (dev).
+- Clientes listos para usar en features siguientes.
+- Próxima fase: `feature/admin-base` (panel de administración).
+
 ## 2026-04-15 — Tato — `feature/fix-landing` → `develop`
 
 ### Contexto

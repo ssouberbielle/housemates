@@ -50,6 +50,40 @@ SUPABASE_SERVICE_ROLE_KEY        # NUNCA al cliente — bypass RLS
 
 **Costos esperados:** $0 / mes durante MVP.
 
+### Gestión de usuarios administradores
+
+Los admins (owners y staff) se crean desde el **Dashboard de Supabase**, nunca desde la app en sí (en v1). La app no tiene UI de registro — es un sistema cerrado.
+
+**Crear un nuevo admin/staff:**
+
+1. Supabase Dashboard → **Authentication → Users → Add user → Create new user**
+2. Ingresar email y password. Tildar **"Auto Confirm User"** (saltea el email de verificación)
+3. Copiar el **UUID** del usuario recién creado (columna `id` en auth.users)
+4. Ir a **Table Editor → tabla `admins`** → Insert row:
+   - `id` → el UUID del paso 3
+   - `email` → el mismo email
+   - `name` → nombre del admin
+   - `role` → `owner` (acceso total) o `staff` (solo scanner cuando se implemente)
+   - `active` → `true`
+
+> **Importante:** el usuario tiene que existir en AMBOS lugares — `auth.users` (maneja la password) y `admins` (controla el acceso al panel). Si falta en `admins`, la sesión se crea pero el panel rechaza el acceso.
+
+**Cambiar password de un admin:**
+
+- Desde el dashboard: Authentication → Users → clic en el usuario → **"Send password recovery"** (manda email) o editar directamente el campo password
+- Desde el panel admin (cuando se implemente `/admin/config`): `supabase.auth.updateUser({ password: 'nueva' })` con Server Action autenticado
+
+**Desactivar un admin temporalmente** (ej: staff que ya no trabaja):
+- Table Editor → `admins` → cambiar `active` a `false`
+- El usuario puede seguir logueándose en Supabase Auth pero el panel lo rechaza
+- Para revocar acceso total: también eliminar desde Authentication → Users
+
+**Roles:**
+| Rol | Acceso |
+|---|---|
+| `owner` | Panel completo: eventos, tickets, whitelist, config, invitaciones |
+| `staff` | Solo scanner de puerta (control por rol pendiente de implementar) |
+
 ---
 
 ## 2. Mercado Pago

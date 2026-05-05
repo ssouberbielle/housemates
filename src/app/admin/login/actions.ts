@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { redirect } from 'next/navigation';
 
 export async function loginAction(
@@ -8,11 +9,17 @@ export async function loginAction(
   password: string
 ): Promise<{ error: string } | void> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: 'Email o contraseña incorrectos' };
   }
+
+  const db = createAdminClient();
+  await db
+    .from('admins')
+    .update({ last_login_at: new Date().toISOString() })
+    .eq('id', data.user.id);
 
   redirect('/admin');
 }

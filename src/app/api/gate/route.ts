@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import { getGateSession } from '@/lib/auth/gate';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,8 +24,18 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(aBuf, bBuf);
 }
 
+async function getGatePassword(): Promise<string | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from('site_config')
+    .select('value')
+    .eq('key', 'gate_password')
+    .single();
+  return data?.value ?? process.env.GATE_PASSWORD ?? null;
+}
+
 export async function POST(req: Request) {
-  const expected = process.env.GATE_PASSWORD;
+  const expected = await getGatePassword();
   if (!expected) {
     return NextResponse.json({ error: 'server_misconfigured' }, { status: 500 });
   }

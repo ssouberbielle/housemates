@@ -1,113 +1,118 @@
 # HANDOFF — HOUSE MATES
 
 > Estado actual del proyecto. Este archivo se reescribe en cada PR que mergea a `develop`.
-> Última actualización: 2026-05-04 por Tato (branch `feature/admin-base`, en progreso)
+> Última actualización: 2026-05-07 por Tato (branch `feature/admin-base`, PR pendiente)
 
 ---
 
 ## Dónde estamos
 
-**Fase:** Diseño + docs ✅ → Scaffold + gate ✅ → Fix visual landing ✅ → Supabase + DB ✅ → Admin base ⏳
+**Fase:** Diseño + docs ✅ → Scaffold + gate ✅ → Fix visual landing ✅ → Supabase + DB ✅ → Admin base ✅ (PR pendiente)
 
-Quinta feature en curso. El panel de administración tiene login funcionando con Supabase Auth (Server Action), middleware de auth correctamente configurado, y layout del panel con sidebar y header. Falta implementar las páginas concretas del panel (eventos, tickets, whitelist, config).
+`feature/admin-base` está lista para PR a `develop`. El panel de admin tiene auth completa, layout navegable con todos los links funcionando, gate password configurable desde el panel, y Playwright configurado con 7 tests verdes.
 
 ---
 
 ## Branch activa
 
-- `feature/admin-base` (en desarrollo — aún no PR a develop)
+- `feature/admin-base` — PR pendiente contra `develop`
 
 ---
 
 ## Qué está hecho
 
-### Feature `admin-base` (en curso)
+### Feature `admin-base` (esta PR)
 
-- `src/middleware.ts` — agregado `handleAdminAuth` para rutas `/admin/*` y `/api/admin/*`; separado del gate de password; refresca tokens de Supabase en cada request
-- `src/lib/auth/admin.ts` — helpers `getAdminUser()`, `requireAdmin()`, `requireOwner()`, `logAdminAction()`
-- `src/app/admin/login/page.tsx` — login form (Client Component, `useTransition`)
-- `src/app/admin/login/actions.ts` — `loginAction` (Server Action con `redirect('/admin')`), `logoutAction`
-- `src/app/admin/(panel)/layout.tsx` — layout del panel con Sidebar + Header; redirige a login si `getAdminUser()` retorna null
-- `src/app/admin/(panel)/page.tsx` — dashboard con KPIs (tickets vendidos, whitelist activa, próximo evento)
-- `src/app/api/admin/auth/login/route.ts` — endpoint REST alternativo (no usado en el flujo actual, disponible para uso futuro)
-- `src/components/admin/sidebar.tsx` y `header.tsx` — componentes de layout del panel
-- `@supabase/ssr` actualizado de `0.3.0` a `0.10.2` (ver DECISIONS #011)
+**Auth y estructura:**
+- `src/middleware.ts` — `handleAdminAuth` para rutas `/admin/*` y `/api/admin/*`; separado del gate; refresca tokens Supabase en cada request
+- `src/lib/auth/admin.ts` — `getAdminUser()`, `requireAdmin()`, `requireOwner()`, `logAdminAction()`
+- `src/app/admin/login/page.tsx` + `actions.ts` — login/logout con Server Actions, Supabase signInWithPassword, actualiza `last_login_at`
+- `src/app/admin/(panel)/layout.tsx` — layout protegido con Sidebar + Header
+- `src/components/admin/sidebar.tsx` + `header.tsx` — navegación con 6 links + badge de rol
 
-**Bug crítico resuelto:** `@supabase/ssr@0.3.0` usaba API `get/set/remove` y el código usaba `getAll/setAll` (introducida en v0.5.0). La librería ignoraba silenciosamente los callbacks — las sesiones nunca se persistían. Actualizar a 0.10.2 resolvió el login.
+**Dashboard:**
+- `src/app/admin/(panel)/page.tsx` — KPIs: tickets vendidos (status=paid), whitelist activa, próximo evento publicado
 
-### Feature `supabase-setup` (mergeada a develop — 2026-04-15)
+**Skeleton completo del panel (stub pages):**
+- `/admin/events` — lista vacía + botón deshabilitado
+- `/admin/events/[id]` — overview con stats reales (count tickets, tiers), tabs de navegación
+- `/admin/events/[id]/edit|tickets|invitations|scan` — stubs navegables
+- `/admin/whitelist` — count real de activos, botón deshabilitado
+- `/admin/config` — gate password configurable (ver más abajo)
+- `/admin/admins` — lista read-only de admins actuales, solo owners
+- `/admin/logs` — stub, solo owners
+- `src/components/admin/tab-link.tsx` — Client Component para tabs activos en sub-layout de eventos
 
-- `supabase/migrations/0001_init.sql` — schema completo: 10 tablas (admins, events, ticket_tiers, tickets, whitelist, check_ins, admin_logs, site_config, gate_attempts, email_log), tipos enum, trigger `updated_at`
-- `supabase/migrations/0002_indexes.sql` — índices de performance
-- `supabase/migrations/0003_rls.sql` — Row Level Security en todas las tablas
-- `supabase/migrations/0004_seed.sql` — datos de seed para dev
-- `supabase/config.toml` — config del CLI de Supabase
-- `src/lib/supabase/server.ts` — cliente SSR para Server Components / Route Handlers / Server Actions
-- `src/lib/supabase/client.ts` — cliente browser
-- `src/lib/supabase/admin.ts` — cliente con service_role (bypass RLS)
-- `src/types/database.ts` — tipos TypeScript generados del schema
-- `src/lib/validation/` — helpers de normalización y validación (email, documento, schemas zod)
+**Gate password configurable desde el panel:**
+- `src/app/api/gate/route.ts` — ahora lee de `site_config` (fallback a env var `GATE_PASSWORD` si no hay fila)
+- `src/app/admin/(panel)/config/page.tsx` — muestra fecha de última actualización, form para owners
+- `src/app/admin/(panel)/config/actions.ts` — `updateGatePasswordAction` con `requireOwner()`, validación mínimo 6 chars, upsert a `site_config`, `logAdminAction`
+- `src/app/admin/(panel)/config/gate-password-form.tsx` — Client Component con feedback éxito/error
 
-### Features previas (siguen vigentes)
+**Testing con Playwright:**
+- `playwright.config.ts` — dev server local, serial (no parallel), carga `.env.test.local`
+- `tests/helpers/auth.ts` — `loginAsAdmin()`, `loginAsOwner()`
+- `tests/e2e/auth/login.spec.ts` — 5 tests: login correcto, password incorrecto, redirecciones sin sesión, logout
+- `tests/e2e/admin/config.spec.ts` — 2 tests: cambio de gate password, validación mínimo 6 chars
+- Scripts: `test:e2e`, `test:e2e:ui`, `test:e2e:headed` en `package.json`
+- 7/7 tests verdes
 
-**Infra Next.js:**
-- Next.js 14.2 + React 18.3 + TypeScript strict + Tailwind 3.4
-- Headers de seguridad globales, paleta ink/bone/ember, fuentes Fraunces + JetBrains Mono
-- Deps runtime: iron-session, zod, cva, clsx, tailwind-merge, lucide-react
+### Features previas mergeadas (siguen vigentes)
 
-**Gate funcional:**
-- `src/lib/auth/gate.ts` — cookie `hm_access`, TTL 24h, httpOnly + secure en prod
-- `src/middleware.ts` — bouncer global; admin paths van a handleAdminAuth, resto va a handleGateAuth
-- `src/app/api/gate/route.ts` — POST con zod + `timingSafeEqual` + delay 500ms en fallo
-- `src/app/access/page.tsx` — input con shake/ember feedback en password incorrecto
-
-**UI:**
-- Landing `/` con tipografía `14-22vw`, micro-interacciones heartbeat + reveal staggered
-- Primitivos `button.tsx` + `input.tsx` con CVA variants
-- `not-found.tsx` en línea estética
+- **supabase-setup:** schema 10 tablas, migrations, clientes SSR/browser/admin, tipos TS, validaciones
+- **landing-gate:** gate iron-session, middleware, `/access`, landing UI
+- **fix-landing:** handle IG + mayúsculas
+- **project-base:** arquitectura documentada, docs/, CLAUDE.md
 
 ---
 
-## Qué está pendiente en `feature/admin-base`
+## Qué está pendiente (próximas ramas)
 
-- [ ] `/admin/events` — listado y gestión de eventos
-- [ ] `/admin/events/[id]` — detalle y edición de evento
-- [ ] `/admin/tickets` — listado de tickets con filtros
-- [ ] `/admin/whitelist` — gestión de emails autorizados (agregar, desactivar, banear)
-- [ ] `/admin/invitations` — crear invitaciones (tickets con source=invitation)
-- [ ] `/admin/scanner` — validador QR en puerta
-- [ ] `/admin/config` — configuración del site (GATE_PASSWORD, etc.)
-- [ ] Control de acceso por rol (owner vs staff) en las páginas del panel
+Cada una parte de `develop` tras este merge:
+
+| Rama | Contenido |
+|------|-----------|
+| `feature/admin-events` | CRUD eventos + tiers (crear, editar, archivar, toggle sales) |
+| `feature/admin-whitelist` | Bulk add, búsqueda, ban, edición inline |
+| `feature/admin-tickets` | Tabla compradores, ticket manual, resend email |
+| `feature/admin-scan` | Invitaciones + Scanner QR (PWA) + close-door |
+| `feature/admin-staff` | CRUD admins + logs de auditoría |
+
+**Infra pendiente (humano):**
+- Deploy a Vercel + compra de dominio (ver `docs/DEPLOY.md` y `docs/NEXT_STEPS.md`)
+- Configurar `GATE_PASSWORD` inicial en `site_config` vía panel o seed
 
 ---
 
 ## Bloqueos / Dudas abiertas
 
-- **Dominio final** aún sin decidir.
-- **Deploy a Vercel** pendiente (ver `docs/DEPLOY.md` y `docs/NEXT_STEPS.md`).
-- **`GATE_PASSWORD` de producción**: lo define el equipo al primer deploy.
+- Dominio final aún sin decidir.
+- Deploy a Vercel pendiente.
+- Integración Mercado Pago + emails (Resend) quedan para después de las features de admin.
 
 ---
 
 ## Decisiones recientes relevantes
 
-- **#011** — `@supabase/ssr` actualizado a 0.10.2; API `getAll/setAll` era incompatible con 0.3.0
-- **#012** — Admins se crean manualmente desde el dashboard de Supabase (no hay UI de registro en v1)
-- Previas siguen vigentes: whitelist 100% manual, cookie 1 día, UYU único, 1Password, scanner sin offline v1, webhook MP idempotente
+- **#013** — Skeleton first: `feature/admin-base` cierra con stub pages navegables; CRUD completo va en ramas separadas por feature
+- **#014** — Gate password migrado de env var a `site_config`; `api/gate` lee de DB con fallback (supersede #008)
+- **#012** — Admins se crean manualmente desde Supabase dashboard en v1
+- **#011** — `@supabase/ssr` actualizado a 0.10.2 (API getAll/setAll incompatible con 0.3.0)
 
-Ver `memoria/DECISIONS.md` para historial completo (#001–#012).
+Ver `memoria/DECISIONS.md` para historial completo (#001–#014).
 
 ---
 
 ## Quién hizo qué en la última sesión
 
-- **Tato** (2026-05-04): implementó feature/admin-base — login, middleware admin auth, panel layout, dashboard KPIs. Resolvió bug de versión de `@supabase/ssr`.
+- **Tato** (2026-05-07): completó `feature/admin-base` — Playwright setup + 7 tests, stub pages de todo el panel, gate password configurable desde `/admin/config`, migración de env var a `site_config`.
 
 ---
 
 ## Próximos pasos concretos
 
-1. Completar páginas del panel en `feature/admin-base` (eventos, tickets, whitelist, scanner, config)
-2. Correr `/security-review` o `shannon` antes del PR (hay rutas admin nuevas)
-3. PR `feature/admin-base` → `develop` con review de al menos 1 miembro
-4. Retomar deploy a Vercel + dominio (bloqueado desde `feature/fix-landing`)
+1. Mergear PR `feature/admin-base` → `develop` (review de al menos 1 miembro)
+2. Abrir `feature/admin-events` desde `develop` — CRUD de eventos + Playwright tests
+3. Abrir `feature/admin-whitelist` desde `develop` — bulk add, búsqueda, ban
+4. Coordinar deploy a Vercel + dominio (tarea humana, no requiere más código)
+5. Correr `/shannon` antes del PR de cualquier feature que toque gate, whitelist o scan

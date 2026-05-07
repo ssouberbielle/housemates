@@ -225,7 +225,45 @@ Skills elegidas:
 
 ---
 
-<!-- Las próximas decisiones se agregan como #011, #012, etc. -->
+<!-- Las próximas decisiones se agregan como #015, etc. -->
+
+## #013 — Estrategia skeleton-first para el panel admin
+
+**Fecha:** 2026-05-07
+**Autor:** Tato
+
+**Contexto:** El panel admin tiene ~10 secciones. Meterlas todas en una rama generaba PRs de 800+ líneas imposibles de revisar y riesgo de que un bug en el scanner bloqueara el merge de la whitelist.
+
+**Decisión:** `feature/admin-base` cierra con el esqueleto completo: todas las páginas creadas como stubs navegables (UI con datos de solo lectura donde ya están disponibles). El CRUD de cada sección va en ramas separadas (`feature/admin-events`, `feature/admin-whitelist`, etc.) que parten de `develop` tras el merge de `admin-base`.
+
+**Alternativas descartadas:**
+- Todo en `admin-base`: PRs inrevisables, dependencias de merge entre features paralelas.
+- Sin stubs (agregar páginas en cada feature): el sidebar tendría links rotos hasta que cada feature mergee; la navegación del panel no sería coherente.
+
+**Consecuencias:**
+- El sidebar está completo y navegable desde el primer merge.
+- Cada feature siguiente solo agrega funcionalidad a una página que ya existe (contrato claro).
+- Los PRs de feature son enfocados y pequeños.
+
+---
+
+## #014 — Gate password migrado de env var a `site_config` (supersede #008)
+
+**Fecha:** 2026-05-07
+**Autor:** Tato + Claude
+
+**Contexto:** En `feature/landing-gate` se documentó (#008) que `GATE_PASSWORD` vivía en una env var temporalmente y migraría a `site_config` cuando llegara Supabase. Ese momento llegó.
+
+**Decisión:** `api/gate/route.ts` ahora lee el password de la tabla `site_config` (key = `gate_password`) usando `createAdminClient()`. Si la fila no existe, hace fallback a `process.env.GATE_PASSWORD`. El admin panel en `/admin/config` permite cambiarlo con `updateGatePasswordAction` (solo owners). Se registra en `admin_logs` cada cambio.
+
+**Alternativas descartadas:**
+- Seguir con env var: requiere redeploy en Vercel para cada rotación de password. Inaceptable para operación normal del evento.
+- Env var sin fallback: rompe entornos que no tienen la fila en DB aún.
+
+**Consecuencias:**
+- El gate password es rotable en tiempo real desde el panel sin redeploy.
+- El fallback garantiza que staging/CI que usan env var siguen funcionando.
+- Cada cambio queda auditado en `admin_logs`.
 
 ## #011 — Actualización de `@supabase/ssr` a 0.10.2
 

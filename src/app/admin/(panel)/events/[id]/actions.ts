@@ -45,16 +45,26 @@ export async function updateEventAction(
     const tiersParsed = tiersSchema.safeParse(newTiers)
     if (!tiersParsed.success) return { error: tiersParsed.error.issues[0].message }
 
-    const { data: existing } = await db
+    const newNames = tiersParsed.data.map((t) => t.name.toLowerCase().trim())
+    if (newNames.length !== new Set(newNames).size) {
+      return { error: 'No puede haber dos tiers con el mismo nombre.' }
+    }
+
+    const { data: existingTiers } = await db
       .from('ticket_tiers')
-      .select('sort_order')
+      .select('name, sort_order')
       .eq('event_id', id)
       .order('sort_order', { ascending: false })
-      .limit(1)
 
-    const nextOrder = (existing?.[0]?.sort_order ?? 0) + 1
+    const existingNames = new Set(existingTiers?.map((t) => t.name.toLowerCase().trim()) ?? [])
+    const conflict = newNames.find((n) => existingNames.has(n))
+    if (conflict) {
+      return { error: `Ya existe un tier con ese nombre en este evento.` }
+    }
 
-    await db.from('ticket_tiers').insert(
+    const nextOrder = (existingTiers?.[0]?.sort_order ?? 0) + 1
+
+    const { error: tiersError } = await db.from('ticket_tiers').insert(
       tiersParsed.data.map((t, i) => ({
         ...t,
         description: t.description || null,
@@ -62,6 +72,10 @@ export async function updateEventAction(
         sort_order: nextOrder + i,
       }))
     )
+    if (tiersError) {
+      if (tiersError.code === '23505') return { error: 'Ya existe un tier con ese nombre en este evento.' }
+      return { error: 'Error al guardar los tiers.' }
+    }
   }
 
   await logAdminAction(admin.id, 'update', 'event', id)

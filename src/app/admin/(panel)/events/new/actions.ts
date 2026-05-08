@@ -28,6 +28,11 @@ export async function createEventAction(
     return { error: tiersParsed.error.issues[0].message }
   }
 
+  const tierNames = tiersParsed.data.map((t) => t.name.toLowerCase().trim())
+  if (tierNames.length !== new Set(tierNames).size) {
+    return { error: 'No puede haber dos tiers con el mismo nombre.' }
+  }
+
   const db = createAdminClient()
 
   const { data: event, error: eventError } = await db
@@ -55,7 +60,10 @@ export async function createEventAction(
   }))
 
   const { error: tiersError } = await db.from('ticket_tiers').insert(tiersToInsert)
-  if (tiersError) return { error: 'Evento creado pero error al guardar los tiers.' }
+  if (tiersError) {
+    if (tiersError.code === '23505') return { error: 'No puede haber dos tiers con el mismo nombre.' }
+    return { error: 'Evento creado pero error al guardar los tiers.' }
+  }
 
   await logAdminAction(admin.id, 'create', 'event', event.id)
 

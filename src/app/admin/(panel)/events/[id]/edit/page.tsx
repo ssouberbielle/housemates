@@ -39,7 +39,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
     description_md: event.description_md ?? '',
   }
 
-  const tiers: TicketTier[] = (event.ticket_tiers as TicketTier[]) ?? []
+  const tiers: TicketTier[] = ((event.ticket_tiers as TicketTier[]) ?? []).sort((a, b) => a.sort_order - b.sort_order)
 
   return (
     <div className="max-w-2xl space-y-6">

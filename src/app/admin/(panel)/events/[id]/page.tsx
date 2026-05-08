@@ -29,7 +29,7 @@ export default async function EventOverviewPage({ params }: { params: { id: stri
     .eq('event_id', params.id)
     .eq('status', 'paid')
 
-  const tiers = (event.ticket_tiers as TicketTier[]) ?? []
+  const tiers = ((event.ticket_tiers as TicketTier[]) ?? []).sort((a, b) => a.sort_order - b.sort_order)
   const local = toZonedTime(new Date(event.date_start), TZ)
 
   const toggleSales = toggleSalesAction.bind(null, event.id, event.sales_active)
@@ -64,11 +64,10 @@ export default async function EventOverviewPage({ params }: { params: { id: stri
           <p className="px-5 py-3 text-xs tracking-widest text-bone/40 uppercase">Tiers</p>
           {tiers.map((tier) => {
             const isSoldOut = tier.sold_out_override || tier.quantity_sold >= tier.quantity_total
-            const isUnavailable = !tier.active || isSoldOut
             const toggleActive = toggleTierActiveAction.bind(null, tier.id, params.id, tier.active)
             const toggleSoldOut = toggleTierSoldOutAction.bind(null, tier.id, params.id, tier.sold_out_override)
             return (
-              <div key={tier.id} className={`flex items-center justify-between px-5 py-3 gap-4 transition-opacity ${isUnavailable ? 'opacity-40' : ''}`}>
+              <div key={tier.id} className="flex items-center justify-between px-5 py-3 gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm text-bone">{tier.name}</p>

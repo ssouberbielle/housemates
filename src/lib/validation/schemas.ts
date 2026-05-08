@@ -61,8 +61,17 @@ export const tierSchema = z.object({
 
 export const tiersSchema = z.array(tierSchema).min(1, 'Agregá al menos un tier')
 
+export const tierEditSchema = z.object({
+  name: z.string().min(1, 'Nombre requerido'),
+  price_uyu: z.coerce.number().positive('Precio debe ser mayor a 0'),
+  quantity_total: z.coerce.number().int().positive('Cantidad debe ser mayor a 0'),
+  description: z.string().optional(),
+  active: z.boolean(),
+})
+
 export type EventInput = z.infer<typeof eventSchema>
 export type TierInput = z.infer<typeof tierSchema>
+export type TierEditInput = z.infer<typeof tierEditSchema>
 export type Buyer = z.infer<typeof buyerSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type WhitelistBulkInput = z.infer<typeof whitelistBulkSchema>;

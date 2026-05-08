@@ -2,7 +2,7 @@
 
 import { requireAdmin, requireOwner, logAdminAction } from '@/lib/auth/admin'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { eventSchema, tiersSchema, type EventInput, type TierInput } from '@/lib/validation/schemas'
+import { eventSchema, tiersSchema, tierEditSchema, type EventInput, type TierInput, type TierEditInput } from '@/lib/validation/schemas'
 import { fromZonedTime } from 'date-fns-tz'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -82,6 +82,74 @@ export async function updateEventAction(
   revalidatePath(`/admin/events/${id}`)
   revalidatePath(`/admin/events/${id}/edit`)
   redirect(`/admin/events/${id}`)
+}
+
+export async function updateTierAction(
+  tierId: string,
+  eventId: string,
+  data: TierEditInput
+): Promise<{ error: string } | void> {
+  const admin = await requireAdmin()
+
+  const parsed = tierEditSchema.safeParse(data)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const db = createAdminClient()
+
+  const { data: conflict } = await db
+    .from('ticket_tiers')
+    .select('id')
+    .eq('event_id', eventId)
+    .neq('id', tierId)
+    .ilike('name', parsed.data.name.trim())
+    .maybeSingle()
+
+  if (conflict) return { error: 'Ya existe un tier con ese nombre en este evento.' }
+
+  const { error } = await db
+    .from('ticket_tiers')
+    .update({
+      name: parsed.data.name,
+      price_uyu: parsed.data.price_uyu,
+      quantity_total: parsed.data.quantity_total,
+      description: parsed.data.description || null,
+      active: parsed.data.active,
+    })
+    .eq('id', tierId)
+
+  if (error) {
+    if (error.code === '23505') return { error: 'Ya existe un tier con ese nombre en este evento.' }
+    return { error: 'Error al guardar el tier.' }
+  }
+
+  await logAdminAction(admin.id, 'update', 'tier', tierId)
+  revalidatePath(`/admin/events/${eventId}`)
+  revalidatePath(`/admin/events/${eventId}/edit`)
+}
+
+export async function toggleTierActiveAction(
+  tierId: string,
+  eventId: string,
+  current: boolean
+): Promise<void> {
+  const admin = await requireAdmin()
+  const db = createAdminClient()
+  await db.from('ticket_tiers').update({ active: !current }).eq('id', tierId)
+  await logAdminAction(admin.id, !current ? 'activate_tier' : 'deactivate_tier', 'tier', tierId)
+  revalidatePath(`/admin/events/${eventId}`)
+  revalidatePath(`/admin/events/${eventId}/edit`)
+}
+
+export async function toggleTierSoldOutAction(
+  tierId: string,
+  eventId: string,
+  current: boolean
+): Promise<void> {
+  const admin = await requireAdmin()
+  const db = createAdminClient()
+  await db.from('ticket_tiers').update({ sold_out_override: !current }).eq('id', tierId)
+  await logAdminAction(admin.id, !current ? 'soldout_tier' : 'restore_tier', 'tier', tierId)
+  revalidatePath(`/admin/events/${eventId}`)
 }
 
 export async function toggleSalesAction(id: string, current: boolean): Promise<void> {

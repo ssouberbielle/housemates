@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { requireAdmin } from '@/lib/auth/admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { StatusBadge } from '@/components/admin/events/status-badge'
-import { toggleSalesAction, archiveEventAction } from './actions'
+import { toggleSalesAction, archiveEventAction, toggleTierActiveAction, toggleTierSoldOutAction } from './actions'
 import { toZonedTime } from 'date-fns-tz'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -62,17 +62,47 @@ export default async function EventOverviewPage({ params }: { params: { id: stri
       {tiers.length > 0 && (
         <div className="border border-white/8 divide-y divide-white/8">
           <p className="px-5 py-3 text-xs tracking-widest text-bone/40 uppercase">Tiers</p>
-          {tiers.map((tier) => (
-            <div key={tier.id} className="flex items-center justify-between px-5 py-3">
-              <div>
-                <p className="text-sm text-bone">{tier.name}</p>
-                {tier.description && <p className="text-xs text-bone/35">{tier.description}</p>}
+          {tiers.map((tier) => {
+            const isSoldOut = tier.sold_out_override || tier.quantity_sold >= tier.quantity_total
+            const isUnavailable = !tier.active || isSoldOut
+            const toggleActive = toggleTierActiveAction.bind(null, tier.id, params.id, tier.active)
+            const toggleSoldOut = toggleTierSoldOutAction.bind(null, tier.id, params.id, tier.sold_out_override)
+            return (
+              <div key={tier.id} className={`flex items-center justify-between px-5 py-3 gap-4 transition-opacity ${isUnavailable ? 'opacity-40' : ''}`}>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm text-bone">{tier.name}</p>
+                    {!tier.active && (
+                      <span className="text-xs text-bone/40 border border-white/10 px-1.5 py-0.5 leading-none">inactiva</span>
+                    )}
+                    {isSoldOut && (
+                      <span className="text-xs text-red-400/70 border border-red-400/30 px-1.5 py-0.5 leading-none">agotada</span>
+                    )}
+                  </div>
+                  {tier.description && <p className="text-xs text-bone/35 mt-0.5">{tier.description}</p>}
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <p className="text-sm text-bone/50 tabular-nums">
+                    ${tier.price_uyu.toLocaleString('es-UY')} · {tier.quantity_sold}/{tier.quantity_total}
+                  </p>
+                  {event.status !== 'archived' && (
+                    <div className="flex items-center gap-3">
+                      <form action={toggleActive}>
+                        <button type="submit" className="text-xs text-bone/30 hover:text-bone/70 transition-colors">
+                          {tier.active ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </form>
+                      <form action={toggleSoldOut}>
+                        <button type="submit" className="text-xs text-bone/30 hover:text-bone/70 transition-colors">
+                          {tier.sold_out_override ? 'Restaurar' : 'Agotar'}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-bone/50">
-                ${tier.price_uyu.toLocaleString('es-UY')} · {tier.quantity_sold}/{tier.quantity_total}
-              </p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
